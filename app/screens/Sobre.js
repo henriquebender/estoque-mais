@@ -1,20 +1,7 @@
 import React from 'react';
-import { ScrollView, Text, StyleSheet } from 'react-native';
-import { Cartao } from '../components/Bloco';
-import { cores } from '../components/tema';
-
-export default function Sobre() {
-  return <ScrollView contentContainerStyle={styles.container}>
-    <Text style={styles.titulo}>Sobre o Estoque+</Text>
-    <Cartao titulo="Problema" descricao="Pequenos comércios podem ter prejuízos por desorganização do estoque, vencimento de produtos e falta de acompanhamento das quantidades." />
-    <Cartao titulo="Solução" descricao="Aplicativo para organizar produtos, controlar quantidades e validades e mostrar alertas para reduzir perdas." />
-    <Cartao titulo="Público-alvo" descricao="Pequenos mercados, mercearias, minimercados e seus colaboradores." />
-    <Cartao titulo="Gerente" descricao="Poderá consultar, cadastrar, editar e excluir produtos, além de gerenciar funcionários." />
-    <Cartao titulo="Funcionário" descricao="Poderá consultar produtos, atualizar quantidades e acompanhar alertas. Não poderá excluir produtos nem gerenciar usuários." />
-    <Cartao titulo="Próximas entregas" descricao="Entrega 2: MySQL e API. Entrega 3: CRUD, login, JWT e permissões. Entrega 4: testes e APK." />
-  </ScrollView>;
-}
-const styles = StyleSheet.create({
-  container: { padding: 20, paddingBottom: 40 },
-  titulo: { fontSize: 23, fontWeight: 'bold', color: cores.texto, marginBottom: 20 }
-});
+import { ScrollView, View, Text, StyleSheet } from 'react-native';
+import { Cabecalho, Cartao } from '../components/Bloco';
+import { tema } from '../components/tema';
+const secoes=[['Problema identificado','Pequenos comércios podem enfrentar desperdícios, produtos vencidos e prejuízos por falta de organização do estoque.'],['Nosso objetivo','Facilitar o controle de mercadorias, quantidades disponíveis e datas de validade.'],['Público-alvo','Pequenos mercados, mercearias, minimercados e estabelecimentos comerciais.']];
+export default function Sobre(){return <ScrollView contentContainerStyle={s.conteudo}><Cabecalho etiqueta="CONHEÇA O PROJETO" titulo="Sobre o Estoque+" descricao="Uma solução planejada para tornar o controle comercial mais simples."/>{secoes.map(([titulo,corpo])=><Cartao key={titulo}><Text style={s.titulo}>{titulo}</Text><Text style={s.corpo}>{corpo}</Text></Cartao>)}<Text style={s.secao}>Perfis previstos</Text><Cartao><Text style={s.titulo}>Gerente</Text><Text style={s.corpo}>Poderá cadastrar, consultar, editar e excluir produtos, além de gerenciar funcionários.</Text></Cartao><Cartao><Text style={s.titulo}>Funcionário</Text><Text style={s.corpo}>Poderá consultar produtos, atualizar quantidades e visualizar alertas, conforme suas permissões.</Text></Cartao><Text style={s.nota}>Nesta entrega, as permissões são apenas parte do planejamento. Login e autenticação serão implementados futuramente.</Text></ScrollView>}
+const s=StyleSheet.create({conteudo:{paddingHorizontal:20,paddingTop:30,paddingBottom:20,maxWidth:520,width:'100%',alignSelf:'center'},titulo:{fontSize:16,fontWeight:'800',color:tema.texto,marginBottom:9},corpo:{fontSize:14,lineHeight:22,color:tema.secundario},secao:{fontSize:18,fontWeight:'800',color:tema.texto,marginVertical:15},nota:{fontSize:12,lineHeight:20,color:tema.secundario,marginTop:12}});

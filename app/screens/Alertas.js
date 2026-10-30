@@ -1,19 +1,7 @@
 import React from 'react';
 import { ScrollView, Text, StyleSheet } from 'react-native';
-import { Cartao } from '../components/Bloco';
-import { cores } from '../components/tema';
-
-export default function Alertas() {
-  return <ScrollView contentContainerStyle={styles.container}>
-    <Text style={styles.titulo}>Atenção ao estoque</Text>
-    <Text style={styles.intro}>Exemplos de alertas previstos para o sistema.</Text>
-    <Cartao titulo="Validade próxima" descricao="Leite integral 1 L — vence em 02/11/2026." detalhe="Priorizar a venda ou o uso." corFundo={cores.amarelo} />
-    <Cartao titulo="Estoque baixo" descricao="Iogurte natural — apenas 3 unidades." detalhe="Verificar a necessidade de reposição." corFundo={cores.vermelho} />
-    <Cartao titulo="Como funcionará depois?" descricao="Na Entrega 2, os alertas serão calculados a partir dos produtos armazenados no banco de dados. Nesta versão são apenas exemplos." />
-  </ScrollView>;
-}
-const styles = StyleSheet.create({
-  container: { padding: 20, paddingBottom: 40 },
-  titulo: { fontSize: 23, fontWeight: 'bold', color: cores.texto, marginBottom: 8 },
-  intro: { color: cores.secundario, marginBottom: 20, fontSize: 14 }
-});
+import { Cabecalho, AvisoCard } from '../components/Bloco';
+import { avisosValidade, avisosEstoque } from '../data/demoData';
+import { tema } from '../components/tema';
+export default function Alertas(){return <ScrollView contentContainerStyle={s.conteudo}><Cabecalho etiqueta="ACOMPANHAMENTO" titulo="Alertas" descricao="Produtos que merecem atenção para reduzir perdas e desperdícios."/><Text style={s.secao}>Atenção à validade</Text>{avisosValidade.map(a=><AvisoCard key={a.id} titulo="Validade próxima" produto={a.produto} detalhe="Data de validade" valor={a.valor} tipo="validade"/>)}<Text style={s.secao}>Estoque baixo</Text>{avisosEstoque.map(a=><AvisoCard key={a.id} titulo="Estoque baixo" produto={a.produto} detalhe="Quantidade disponível" valor={a.valor} tipo="baixo"/>)}<Text style={s.nota}>Avisos ilustrativos. A geração automática será implementada nas próximas entregas.</Text></ScrollView>}
+const s=StyleSheet.create({conteudo:{paddingHorizontal:20,paddingTop:30,paddingBottom:20,maxWidth:520,width:'100%',alignSelf:'center'},secao:{fontSize:18,fontWeight:'800',color:tema.texto,marginBottom:13,marginTop:12},nota:{fontSize:12,color:tema.secundario,lineHeight:20,marginTop:13}});

@@ -1,29 +1,6 @@
 import React from 'react';
-import { ScrollView, View, Text, StyleSheet } from 'react-native';
-import { Botao, Cartao } from '../components/Bloco';
-import { cores } from '../components/tema';
-
-export default function Inicio({ navigation }) {
-  return <ScrollView contentContainerStyle={styles.container}>
-    <View style={styles.destaque}>
-      <Text style={styles.marca}>ESTOQUE+</Text>
-      <Text style={styles.titulo}>Seu estoque mais organizado.</Text>
-      <Text style={styles.texto}>Controle mercadorias e acompanhe produtos que precisam de atenção.</Text>
-    </View>
-    <Text style={styles.secao}>Acesso rápido</Text>
-    <Botao titulo="Ver produtos" onPress={() => navigation.navigate('Produtos')} />
-    <Botao titulo="Ver alertas" onPress={() => navigation.navigate('Alertas')} />
-    <Botao titulo="Sobre o projeto" onPress={() => navigation.navigate('Sobre')} />
-    <Text style={styles.secao}>Nesta primeira entrega</Text>
-    <Cartao titulo="Protótipo navegável" descricao="As telas e a navegação estão funcionando. Os produtos são exemplos temporários; o banco de dados e o login serão integrados nas próximas entregas." />
-  </ScrollView>;
-}
-
-const styles = StyleSheet.create({
-  container: { padding: 20, paddingBottom: 40 },
-  destaque: { backgroundColor: cores.verdeClaro, padding: 24, borderRadius: 20, marginBottom: 25 },
-  marca: { fontSize: 13, fontWeight: 'bold', color: cores.verde, letterSpacing: 2, marginBottom: 12 },
-  titulo: { fontSize: 29, fontWeight: 'bold', color: cores.texto, marginBottom: 10 },
-  texto: { fontSize: 15, lineHeight: 23, color: cores.secundario },
-  secao: { fontSize: 19, fontWeight: 'bold', color: cores.texto, marginBottom: 14 }
-});
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { Cabecalho, Cartao, Atalho } from '../components/Bloco';
+import { tema } from '../components/tema';
+export default function Inicio({navigation}){return <ScrollView contentContainerStyle={s.conteudo}><Cabecalho etiqueta="GESTÃO COMERCIAL" titulo="Bem-vindo ao Estoque+" descricao="Organize mercadorias, acompanhe validades e evite perdas no seu comércio."/><Cartao style={s.destaque}><Text style={s.destaquePequeno}>NOSSO OBJETIVO</Text><Text style={s.destaqueTitulo}>Mais controle. Menos desperdício.</Text><Text style={s.destaqueTexto}>Uma solução simples para ajudar pequenos comércios a acompanhar seus produtos e tomar melhores decisões.</Text></Cartao><Text style={s.secao}>Acesso rápido</Text><Atalho icone="▣" titulo="Produtos" descricao="Consulte os itens do estoque" onPress={()=>navigation.navigate('Produtos')}/><Atalho icone="◷" titulo="Alertas" descricao="Veja itens que precisam de atenção" onPress={()=>navigation.navigate('Alertas')}/><Text style={s.secao}>Por que usar?</Text><View style={s.pilares}>{[['✓','Organização'],['◷','Validade'],['▤','Quantidade']].map(([icone,nome])=><View key={nome} style={s.pilar}><Text style={s.pilarIcone}>{icone}</Text><Text style={s.pilarNome}>{nome}</Text></View>)}</View></ScrollView>}
+const s=StyleSheet.create({conteudo:{paddingHorizontal:20,paddingTop:30,paddingBottom:20,maxWidth:520,width:'100%',alignSelf:'center'},destaque:{backgroundColor:tema.azul,padding:23,borderColor:tema.azul},destaquePequeno:{fontSize:11,fontWeight:'800',letterSpacing:2,color:'#C9E1FF'},destaqueTitulo:{fontSize:25,fontWeight:'800',color:tema.branco,marginTop:12,lineHeight:32},destaqueTexto:{fontSize:14,color:'#E4EFFD',lineHeight:22,marginTop:12},secao:{fontSize:17,fontWeight:'800',color:tema.texto,marginTop:13,marginBottom:13},pilares:{flexDirection:'row',gap:9},pilar:{flex:1,backgroundColor:tema.branco,borderWidth:1,borderColor:tema.borda,borderRadius:16,paddingVertical:17,alignItems:'center'},pilarIcone:{fontSize:21,color:tema.azul,fontWeight:'800'},pilarNome:{fontSize:11,color:tema.texto,fontWeight:'700',marginTop:8}});

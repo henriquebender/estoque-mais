@@ -1,11 +1,16 @@
-export const cores = {
-  fundo: '#f7f8f5',
-  branco: '#ffffff',
-  texto: '#20312b',
-  secundario: '#64736a',
-  verde: '#21664a',
-  verdeClaro: '#e3f1e9',
-  borda: '#dfe7df',
-  amarelo: '#fff3d5',
-  vermelho: '#fde8e5'
+export const tema = {
+  fundo: '#F8FAFC',
+  texto: '#17263A',
+  secundario: '#64748B',
+  branco: '#FFFFFF',
+  azul: '#1E4F89',
+  azulEscuro: '#12345F',
+  azulClaro: '#EFF6FF',
+  borda: '#E2E8F0',
+  verde: '#267852',
+  verdeClaro: '#EAF8F0',
+  amarelo: '#986300',
+  amareloClaro: '#FFF4D6',
+  vermelho: '#C12D42',
+  vermelhoClaro: '#FFF0F1',
 };
