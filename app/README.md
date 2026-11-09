@@ -198,3 +198,83 @@ Na Entrega 3 serão desenvolvidos:
 - Rotas protegidas.
 
 Na Entrega 4 serão realizados os testes finais, a documentação e a geração do APK.
+
+## Entrega 3 — Autenticação, JWT, permissões e CRUD
+
+### Objetivo
+
+A terceira etapa do Estoque+ implementa autenticação de usuários, gerenciamento de sessão, controle de acesso e operações completas de gerenciamento de produtos.
+
+### Funcionalidades implementadas
+
+- Cadastro inicial de gerente;
+- Cadastro de funcionários por gerentes autenticados;
+- Proteção de senhas com bcrypt;
+- Login com validação de e-mail e senha;
+- Geração de JWT;
+- Armazenamento local da sessão;
+- Envio de Bearer Token nas requisições;
+- Validação de JWT no backend;
+- Logout;
+- Perfis de gerente e funcionário;
+- Middleware de autenticação e autorização;
+- CRUD completo de produtos;
+- Atualização de quantidades;
+- Integração React Native, Express e MySQL.
+
+### Níveis de acesso
+
+**Gerente:** consulta, cadastra, edita e exclui produtos, atualiza quantidades, visualiza alertas e cadastra funcionários.
+
+**Funcionário:** consulta produtos, atualiza quantidades e visualiza alertas. Não pode cadastrar, editar completamente ou excluir produtos.
+
+### Rotas de autenticação
+
+| Método | Rota | Acesso |
+|---|---|---|
+| POST | /auth/primeiro-gerente | Público, apenas enquanto não houver usuários |
+| POST | /auth/login | Público |
+| GET | /auth/perfil | Autenticado |
+| POST | /auth/funcionarios | Gerente |
+
+### Rotas de produtos
+
+| Método | Rota | Acesso |
+|---|---|---|
+| GET | /produtos | Gerente e funcionário |
+| POST | /produtos | Gerente |
+| PUT | /produtos/:id | Gerente |
+| PATCH | /produtos/:id/quantidade | Gerente e funcionário |
+| DELETE | /produtos/:id | Gerente |
+
+### Segurança
+
+As senhas são armazenadas como hashes bcrypt. A API utiliza JWT para identificar usuários autenticados, e as rotas protegidas exigem o cabeçalho Authorization com Bearer Token.
+
+As permissões são verificadas no backend. O aplicativo mantém a sessão localmente e permite logout.
+
+### Execução
+
+1. Iniciar o servidor MySQL e garantir que o banco `estoque_mais` esteja criado.
+2. Na pasta `backend`, executar `npm install`.
+3. Configurar o arquivo `.env` com a conexão MySQL e a chave JWT.
+4. Executar `node server.js`.
+5. Na pasta `app`, executar `npm install` e `npx expo start`.
+6. Abrir o aplicativo, cadastrar o primeiro gerente e realizar login.
+
+### Testes previstos
+
+- Cadastro de gerente;
+- Cadastro de funcionário;
+- Verificação do hash de senha;
+- Login com credenciais válidas e inválidas;
+- Acesso a rotas com e sem JWT;
+- Verificação de permissões de gerente e funcionário;
+- Cadastro, consulta, edição e exclusão de produtos;
+- Atualização de quantidades;
+- Persistência dos dados no MySQL;
+- Restauração da sessão e logout.
+
+### Próxima etapa
+
+Na Entrega 4 serão realizados os ajustes finais, os testes de apresentação, a revisão da documentação e a geração do APK.
