@@ -1,4 +1,7 @@
-import React, { useCallback, useState } from 'react';
+import React, {
+  useCallback,
+  useState
+} from 'react';
 
 import {
   ScrollView,
@@ -7,28 +10,37 @@ import {
   TextInput,
   Pressable,
   StyleSheet,
-  ActivityIndicator
+  ActivityIndicator,
+  Alert
 } from 'react-native';
 
-import { useFocusEffect } from '@react-navigation/native';
+import {
+  useFocusEffect
+} from '@react-navigation/native';
 
 import {
   Cabecalho,
   ProdutoCard,
-  Etiqueta,
   Cartao
 } from '../components/Bloco';
 
 import { tema } from '../components/tema';
 
+import { useAuth } from '../context/AuthContext';
+
 import {
   listarProdutos,
-  cadastrarProduto
+  cadastrarProduto,
+  editarProduto,
+  atualizarQuantidade,
+  excluirProduto
 } from '../services/api';
 
-import { prepararProduto } from '../utils/produtos';
+import {
+  prepararProduto
+} from '../utils/produtos';
 
-const formularioInicial = {
+const inicial = {
   nome: '',
   categoria: '',
   quantidade: '',
@@ -38,11 +50,15 @@ const formularioInicial = {
 };
 
 export default function Produtos() {
-  const [produtos, setProdutos] = useState([]);
+  const { usuario } = useAuth();
 
-  const [formulario, setFormulario] = useState(
-    formularioInicial
-  );
+  const gerente = usuario?.perfil === 'gerente';
+
+  const [produtos, setProdutos] = useState([]);
+  const [formulario, setFormulario] = useState({ ...inicial });
+
+  const [editandoId, setEditandoId] = useState(null);
+  const [quantidades, setQuantidades] = useState({});
 
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
@@ -50,237 +66,330 @@ export default function Produtos() {
   const [erro, setErro] = useState('');
   const [mensagem, setMensagem] = useState('');
 
-  // Buscar produtos na API
-  const carregarProdutos = useCallback(async () => {
+  const carregar = useCallback(async () => {
     setCarregando(true);
     setErro('');
 
     try {
       const dados = await listarProdutos();
 
-      const produtosPreparados = dados.map(
-        prepararProduto
-      );
+      setProdutos(dados.map(prepararProduto));
 
-      setProdutos(produtosPreparados);
+      const valores = {};
 
-    } catch (erro) {
-      setErro(erro.message);
+      dados.forEach((produto) => {
+        valores[produto.id] = String(produto.quantidade);
+      });
 
+      setQuantidades(valores);
+    } catch (e) {
+      setErro(e.message);
     } finally {
       setCarregando(false);
     }
   }, []);
 
-  // Atualizar quando entrar na tela
   useFocusEffect(
     useCallback(() => {
-      carregarProdutos();
-    }, [carregarProdutos])
+      carregar();
+    }, [carregar])
   );
 
-  // Atualizar os campos do formulário
-  function alterarCampo(campo, valor) {
+  function alterar(campo, valor) {
     setFormulario((anterior) => ({
       ...anterior,
       [campo]: valor
     }));
   }
 
-  // Cadastrar um produto
-  async function salvarProduto() {
-    if (
-      !formulario.nome.trim() ||
-      !formulario.categoria.trim() ||
-      !formulario.quantidade.trim()
-    ) {
-      setErro(
-        'Preencha nome, categoria e quantidade.'
-      );
-      return;
-    }
+  function limpar() {
+    setFormulario({ ...inicial });
+    setEditandoId(null);
+  }
 
-    setSalvando(true);
+  function iniciarEdicao(produto) {
+    setEditandoId(produto.id);
+
+    setFormulario({
+      nome: produto.nome,
+      categoria: produto.categoria,
+      quantidade: String(produto.quantidade),
+      unidade: produto.unidade,
+      validade:
+        produto.validade === 'Sem validade'
+          ? ''
+          : produto.validade.split('/').reverse().join('-'),
+      quantidade_minima: String(produto.quantidade_minima)
+    });
+
+    setMensagem('');
+    setErro('');
+  }
+
+  async function salvar() {
     setErro('');
     setMensagem('');
 
+    if (
+      !formulario.nome.trim() ||
+      !formulario.categoria.trim() ||
+      !formulario.quantidade.trim() ||
+      !formulario.quantidade_minima.trim() ||
+      !formulario.unidade.trim()
+    ) {
+      setErro('Preencha os campos obrigatórios.');
+      return;
+    }
+
+    const quantidade = Number(formulario.quantidade);
+    const minima = Number(formulario.quantidade_minima);
+
+    if (
+      !Number.isInteger(quantidade) ||
+      quantidade < 0 ||
+      !Number.isInteger(minima) ||
+      minima < 0
+    ) {
+      setErro('Informe quantidades inteiras e não negativas.');
+      return;
+    }
+
+    const dados = {
+      nome: formulario.nome,
+      categoria: formulario.categoria,
+      quantidade,
+      unidade: formulario.unidade,
+      validade: formulario.validade.trim() || null,
+      quantidade_minima: minima
+    };
+
+    setSalvando(true);
+
     try {
-      const novoProduto = {
-        nome: formulario.nome,
-        categoria: formulario.categoria,
+      if (editandoId !== null) {
+        await editarProduto(editandoId, dados);
 
-        quantidade: Number(
-          formulario.quantidade
-        ),
+        setMensagem('Produto atualizado com sucesso!');
+      } else {
+        await cadastrarProduto(dados);
 
-        unidade: formulario.unidade,
+        setMensagem('Produto cadastrado com sucesso!');
+      }
 
-        validade:
-          formulario.validade.trim() || null,
+      limpar();
+      await carregar();
 
-        quantidade_minima: Number(
-          formulario.quantidade_minima
-        )
-      };
-
-      await cadastrarProduto(novoProduto);
-
-      setFormulario({ ...formularioInicial });
-
-      await carregarProdutos();
-
-      setMensagem(
-        'Produto cadastrado com sucesso!'
-      );
-
-    } catch (erro) {
-      setErro(erro.message);
-
+    } catch (e) {
+      setErro(e.message);
     } finally {
       setSalvando(false);
     }
   }
 
+  async function salvarQuantidade(produto) {
+    setErro('');
+    setMensagem('');
+
+    const quantidade = Number(quantidades[produto.id]);
+
+    if (
+      quantidades[produto.id] === '' ||
+      !Number.isInteger(quantidade) ||
+      quantidade < 0
+    ) {
+      setErro('Informe uma quantidade inteira válida.');
+      return;
+    }
+
+    try {
+      await atualizarQuantidade(produto.id, quantidade);
+
+      setMensagem(
+        `Quantidade de ${produto.nome} atualizada!`
+      );
+
+      await carregar();
+
+    } catch (e) {
+      setErro(e.message);
+    }
+  }
+
+  function confirmarExclusao(produto) {
+    const executar = async () => {
+      try {
+        setErro('');
+        setMensagem('');
+
+        await excluirProduto(produto.id);
+
+        if (editandoId === produto.id) {
+          limpar();
+        }
+
+        setMensagem('Produto excluído com sucesso!');
+
+        await carregar();
+
+      } catch (e) {
+        setErro(e.message);
+      }
+    };
+
+    // No navegador, Alert.alert pode não apresentar
+    // a mesma caixa de confirmação do aplicativo nativo.
+    if (typeof window !== 'undefined') {
+      if (window.confirm(`Excluir ${produto.nome}?`)) {
+        executar();
+      }
+
+      return;
+    }
+
+    Alert.alert(
+      'Excluir produto',
+      `Deseja excluir ${produto.nome}?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: executar
+        }
+      ]
+    );
+  }
+
   return (
     <ScrollView
-      contentContainerStyle={styles.conteudo}
+      contentContainerStyle={s.conteudo}
       keyboardShouldPersistTaps="handled"
     >
       <Cabecalho
-        etiqueta="CONTROLE DE ESTOQUE"
+        etiqueta="GESTÃO COMERCIAL"
         titulo="Produtos"
-        descricao="Consulte e cadastre produtos do seu estoque."
+        descricao={
+          gerente
+            ? 'Gerencie os produtos do seu estoque.'
+            : 'Consulte produtos e atualize quantidades.'
+        }
       />
 
-      {/* Resumo */}
-      <Cartao style={styles.resumo}>
-        <Text style={styles.numero}>
+      <Cartao style={s.resumo}>
+        <Text style={s.numero}>
           {produtos.length}
         </Text>
 
-        <View>
-          <Text style={styles.resumoTitulo}>
+        <View style={{ flex: 1 }}>
+          <Text style={s.resumoTitulo}>
             Produtos cadastrados
           </Text>
 
-          <Text style={styles.resumoDescricao}>
-            Informações carregadas do MySQL
+          <Text style={s.resumoDescricao}>
+            Dados armazenados no MySQL
           </Text>
         </View>
       </Cartao>
 
-      {/* Formulário */}
-      <Text style={styles.tituloSecao}>
-        Cadastrar produto
-      </Text>
-
-      <Cartao>
-        <TextInput
-          style={styles.input}
-          placeholder="Nome do produto"
-          placeholderTextColor={tema.secundario}
-          value={formulario.nome}
-          onChangeText={(valor) =>
-            alterarCampo('nome', valor)
-          }
-        />
-
-        <TextInput
-          style={styles.input}
-          placeholder="Categoria"
-          placeholderTextColor={tema.secundario}
-          value={formulario.categoria}
-          onChangeText={(valor) =>
-            alterarCampo('categoria', valor)
-          }
-        />
-
-        <TextInput
-          style={styles.input}
-          placeholder="Quantidade"
-          placeholderTextColor={tema.secundario}
-          keyboardType="numeric"
-          value={formulario.quantidade}
-          onChangeText={(valor) =>
-            alterarCampo('quantidade', valor)
-          }
-        />
-
-        <TextInput
-          style={styles.input}
-          placeholder="Unidade (ex.: un.)"
-          placeholderTextColor={tema.secundario}
-          value={formulario.unidade}
-          onChangeText={(valor) =>
-            alterarCampo('unidade', valor)
-          }
-        />
-
-        <TextInput
-          style={styles.input}
-          placeholder="Validade (AAAA-MM-DD)"
-          placeholderTextColor={tema.secundario}
-          value={formulario.validade}
-          onChangeText={(valor) =>
-            alterarCampo('validade', valor)
-          }
-        />
-
-        <TextInput
-          style={styles.input}
-          placeholder="Quantidade mínima"
-          placeholderTextColor={tema.secundario}
-          keyboardType="numeric"
-          value={formulario.quantidade_minima}
-          onChangeText={(valor) =>
-            alterarCampo('quantidade_minima', valor)
-          }
-        />
-
-        <Pressable
-          style={styles.botao}
-          onPress={salvarProduto}
-          disabled={salvando}
-        >
-          <Text style={styles.botaoTexto}>
-            {salvando
-              ? 'Salvando...'
+      {gerente ? (
+        <>
+          <Text style={s.secao}>
+            {editandoId !== null
+              ? 'Editar produto'
               : 'Cadastrar produto'}
           </Text>
-        </Pressable>
 
-        <Text style={styles.ajuda}>
-          Para a validade, utilize o formato
-          AAAA-MM-DD. Exemplo: 2027-12-15.
-        </Text>
-      </Cartao>
+          <Cartao>
+            <TextInput
+              style={s.input}
+              placeholder="Nome do produto"
+              value={formulario.nome}
+              onChangeText={(v) => alterar('nome', v)}
+            />
 
-      {/* Mensagens */}
+            <TextInput
+              style={s.input}
+              placeholder="Categoria"
+              value={formulario.categoria}
+              onChangeText={(v) => alterar('categoria', v)}
+            />
+
+            <TextInput
+              style={s.input}
+              placeholder="Quantidade"
+              keyboardType="numeric"
+              value={formulario.quantidade}
+              onChangeText={(v) => alterar('quantidade', v)}
+            />
+
+            <TextInput
+              style={s.input}
+              placeholder="Unidade (un., kg, L...)"
+              value={formulario.unidade}
+              onChangeText={(v) => alterar('unidade', v)}
+            />
+
+            <TextInput
+              style={s.input}
+              placeholder="Validade AAAA-MM-DD"
+              value={formulario.validade}
+              onChangeText={(v) => alterar('validade', v)}
+            />
+
+            <TextInput
+              style={s.input}
+              placeholder="Quantidade mínima"
+              keyboardType="numeric"
+              value={formulario.quantidade_minima}
+              onChangeText={(v) =>
+                alterar('quantidade_minima', v)
+              }
+            />
+
+            <Pressable
+              style={s.botao}
+              onPress={salvar}
+              disabled={salvando}
+            >
+              <Text style={s.botaoTexto}>
+                {salvando
+                  ? 'Salvando...'
+                  : editandoId !== null
+                    ? 'Salvar alterações'
+                    : 'Cadastrar produto'}
+              </Text>
+            </Pressable>
+
+            {editandoId !== null ? (
+              <Pressable
+                style={s.botaoSecundario}
+                onPress={limpar}
+              >
+                <Text style={s.botaoSecundarioTexto}>
+                  Cancelar edição
+                </Text>
+              </Pressable>
+            ) : null}
+          </Cartao>
+        </>
+      ) : (
+        <Cartao style={s.aviso}>
+          <Text style={s.avisoTexto}>
+            Perfil funcionário: você pode consultar
+            produtos e atualizar quantidades.
+          </Text>
+        </Cartao>
+      )}
+
       {erro ? (
-        <Text style={styles.erro}>
-          {erro}
-        </Text>
+        <Text style={s.erro}>{erro}</Text>
       ) : null}
 
       {mensagem ? (
-        <Text style={styles.sucesso}>
-          {mensagem}
-        </Text>
+        <Text style={s.sucesso}>{mensagem}</Text>
       ) : null}
 
-      {/* Legenda */}
-      <Text style={styles.tituloSecao}>
-        Situação dos produtos
-      </Text>
-
-      <View style={styles.legenda}>
-        <Etiqueta tipo="ok" />
-        <Etiqueta tipo="validade" />
-        <Etiqueta tipo="baixo" />
-      </View>
-
-      {/* Lista */}
-      <Text style={styles.tituloSecao}>
+      <Text style={s.secao}>
         Lista de produtos
       </Text>
 
@@ -289,24 +398,74 @@ export default function Produtos() {
           size="large"
           color={tema.azul}
         />
-      ) : produtos.length > 0 ? (
-        produtos.map((produto) => (
-          <ProdutoCard
-            key={produto.id}
-            produto={produto}
-          />
-        ))
-      ) : (
-        <Text style={styles.textoVazio}>
+      ) : produtos.length === 0 ? (
+        <Text style={s.vazio}>
           Nenhum produto cadastrado.
         </Text>
+      ) : (
+        produtos.map((produto) => (
+          <View key={produto.id}>
+            <ProdutoCard produto={produto} />
+
+            <Cartao style={s.acoes}>
+              <Text style={s.rotulo}>
+                Atualizar quantidade
+              </Text>
+
+              <View style={s.linha}>
+                <TextInput
+                  style={[s.input, s.campoQuantidade]}
+                  keyboardType="numeric"
+                  value={quantidades[produto.id] ?? ''}
+                  onChangeText={(valor) =>
+                    setQuantidades((anterior) => ({
+                      ...anterior,
+                      [produto.id]: valor
+                    }))
+                  }
+                />
+
+                <Pressable
+                  style={s.botaoPequeno}
+                  onPress={() => salvarQuantidade(produto)}
+                >
+                  <Text style={s.botaoTexto}>
+                    Atualizar
+                  </Text>
+                </Pressable>
+              </View>
+
+              {gerente ? (
+                <View style={s.linha}>
+                  <Pressable
+                    style={s.editar}
+                    onPress={() => iniciarEdicao(produto)}
+                  >
+                    <Text style={s.editarTexto}>
+                      Editar produto
+                    </Text>
+                  </Pressable>
+
+                  <Pressable
+                    style={s.excluir}
+                    onPress={() => confirmarExclusao(produto)}
+                  >
+                    <Text style={s.excluirTexto}>
+                      Excluir
+                    </Text>
+                  </Pressable>
+                </View>
+              ) : null}
+            </Cartao>
+          </View>
+        ))
       )}
 
       <Pressable
-        onPress={carregarProdutos}
-        style={styles.atualizar}
+        style={s.atualizarLista}
+        onPress={carregar}
       >
-        <Text style={styles.atualizarTexto}>
+        <Text style={s.atualizarTexto}>
           Atualizar lista
         </Text>
       </Pressable>
@@ -314,7 +473,7 @@ export default function Produtos() {
   );
 }
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   conteudo: {
     paddingHorizontal: 20,
     paddingTop: 30,
@@ -327,12 +486,12 @@ const styles = StyleSheet.create({
   resumo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 17,
+    gap: 16,
     backgroundColor: tema.azulClaro
   },
 
   numero: {
-    fontSize: 37,
+    fontSize: 35,
     fontWeight: '800',
     color: tema.azul
   },
@@ -344,16 +503,16 @@ const styles = StyleSheet.create({
   },
 
   resumoDescricao: {
-    fontSize: 12,
     color: tema.secundario,
+    fontSize: 12,
     marginTop: 4
   },
 
-  tituloSecao: {
-    fontSize: 17,
+  secao: {
+    fontSize: 18,
     fontWeight: '800',
     color: tema.texto,
-    marginTop: 15,
+    marginTop: 16,
     marginBottom: 12
   },
 
@@ -363,26 +522,39 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     marginBottom: 10,
-    backgroundColor: tema.branco,
-    color: tema.texto
+    color: tema.texto,
+    backgroundColor: tema.branco
   },
 
   botao: {
     backgroundColor: tema.azul,
     padding: 15,
-    borderRadius: 13,
+    borderRadius: 12,
     alignItems: 'center'
   },
 
   botaoTexto: {
-    color: '#FFFFFF',
+    color: tema.branco,
     fontWeight: '800'
   },
 
-  ajuda: {
-    fontSize: 11,
-    color: tema.secundario,
-    marginTop: 9
+  botaoSecundario: {
+    padding: 14,
+    alignItems: 'center'
+  },
+
+  botaoSecundarioTexto: {
+    color: tema.azul,
+    fontWeight: '700'
+  },
+
+  aviso: {
+    backgroundColor: tema.azulClaro
+  },
+
+  avisoTexto: {
+    color: tema.azulEscuro,
+    lineHeight: 20
   },
 
   erro: {
@@ -395,21 +567,68 @@ const styles = StyleSheet.create({
     marginBottom: 10
   },
 
-  legenda: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 7,
-    marginBottom: 6
+  vazio: {
+    color: tema.secundario
   },
 
-  textoVazio: {
+  acoes: {
+    marginTop: -3,
+    paddingTop: 12
+  },
+
+  rotulo: {
     color: tema.secundario,
-    marginBottom: 14
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 8
   },
 
-  atualizar: {
+  linha: {
+    flexDirection: 'row',
     alignItems: 'center',
-    padding: 14
+    gap: 9
+  },
+
+  campoQuantidade: {
+    flex: 1,
+    marginBottom: 0
+  },
+
+  botaoPequeno: {
+    backgroundColor: tema.azul,
+    borderRadius: 10,
+    padding: 13
+  },
+
+  editar: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 10,
+    backgroundColor: tema.azulClaro,
+    alignItems: 'center',
+    marginTop: 12
+  },
+
+  editarTexto: {
+    color: tema.azul,
+    fontWeight: '700'
+  },
+
+  excluir: {
+    padding: 12,
+    borderRadius: 10,
+    backgroundColor: tema.vermelhoClaro,
+    marginTop: 12
+  },
+
+  excluirTexto: {
+    color: tema.vermelho,
+    fontWeight: '700'
+  },
+
+  atualizarLista: {
+    padding: 16,
+    alignItems: 'center'
   },
 
   atualizarTexto: {
